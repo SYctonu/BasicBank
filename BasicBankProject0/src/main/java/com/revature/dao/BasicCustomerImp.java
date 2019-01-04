@@ -58,7 +58,7 @@ public class BasicCustomerImp implements BasicCustomerDao {
 	}
 
 	@Override
-	public boolean insertCustomerProc(BasicCustomer customer) { // currently unused - app displays failure
+	public boolean insertCustomerProc(BasicCustomer customer) {
 		Log.info("registering "+ customer.getUsername());
 		try (Connection conn = JDBCConnectionUtil.getConnection()) {
 			String storePro = "CALL add_customer(?,?,?,?,?,?)";
@@ -84,14 +84,10 @@ public class BasicCustomerImp implements BasicCustomerDao {
 	@Override
 	public BasicCustomer getCustomer() {
 		try (Connection conn = JDBCConnectionUtil.getConnection()) {
-			String sql = "SELECT * FROM customers WHERE user_name = '" + username+"'";
-			//String psql = "SELECT * FROM customers WHERE user_name = ?"; // query doesn't work, something to do with varchar?
-			//PreparedStatement pstmt = conn.prepareStatement(psql);
-			//Log.info("passing '"+username+"' into psql");
-			//pstmt.setString(1, "'"+username+"'");
-			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery(sql);
-			//Log.info(rs.next());
+			String psql = "SELECT * FROM customers WHERE user_name = ?";
+			PreparedStatement pstmt = conn.prepareStatement(psql);
+			pstmt.setString(1, username);
+			ResultSet rs = pstmt.executeQuery();
 			while (rs.next()) {
 				Log.info("while loop executed for getCustomer");
 				return new BasicCustomer(
@@ -160,7 +156,7 @@ public class BasicCustomerImp implements BasicCustomerDao {
 		try (Connection conn = JDBCConnectionUtil.getConnection()) {
 			String sql = "UPDATE accounts SET balance = ? WHERE id = ?";
 			PreparedStatement psu = conn.prepareStatement(sql);
-			psu.setFloat(1, amount); // compatible data types?
+			psu.setFloat(1, amount);
 			psu.setInt(2, id);
 			if (psu.executeUpdate()>0) {
 				return true;
@@ -176,9 +172,8 @@ public class BasicCustomerImp implements BasicCustomerDao {
 	public boolean updateCustomer(String attribute, String value) {
 		Log.info("updating "+ this.getCustomer().getUsername());
 		try (Connection conn = JDBCConnectionUtil.getConnection()) {
-			// calling procedure instead of direct sql stops sql injection
-			//String sql = "UPDATE customers SET ? = ? WHERE acct_id = ?"; // doesn't work
-			String sql = "UPDATE customers SET "+attribute+" = "+value+" WHERE acct_id = "+id;
+			/*
+			//String sql = "UPDATE customers SET "+attribute+" = "+value+" WHERE acct_id = "+id;
 			switch (attribute) {
 				case "acct_id":
 				case "approval":
@@ -186,9 +181,10 @@ public class BasicCustomerImp implements BasicCustomerDao {
 					sql = "UPDATE customers SET "+attribute+" = "+Integer.parseInt(value)+" WHERE acct_id = "+id;
 					break;
 			}
-			
+			*/
+			String sql = "UPDATE customers SET "+attribute+" = ? WHERE acct_id = ?";
 			PreparedStatement psu = conn.prepareStatement(sql);
-			/*
+			
 			psu.setString(1, attribute);
 			switch (attribute) {
 				case "acct_id":
@@ -199,12 +195,11 @@ public class BasicCustomerImp implements BasicCustomerDao {
 					break;
 				default:
 					Log.info("executing default case");
-					psu.setString(2, "'"+value+"'");
+					psu.setString(2, value);
 					break;
 			}
 			psu.setInt(3, id);
-			*/
-			//Log.info("Prepared Statement: "+ psu);
+			
 			if (psu.executeUpdate()>0) {
 				return true;
 			} 
